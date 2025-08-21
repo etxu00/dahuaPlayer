@@ -1,0 +1,46 @@
+# Nombre del workflow
+name: Build and Deploy Vue.js to GitHub Pages
+
+# Evento que dispara el workflow: cada vez que se hace push a la rama 'main'
+on:
+  push:
+    branches:
+      - main
+
+# Permisos necesarios para que el workflow pueda escribir en el repositorio
+permissions:
+  contents: write
+
+# Trabajos (jobs) que se ejecutarán
+jobs:
+  build-and-deploy:
+    # El tipo de máquina virtual que se usará
+    runs-on: ubuntu-latest
+
+    # Los pasos que seguirá el job
+    steps:
+      # 1. Clona tu repositorio en la máquina virtual
+      - name: Checkout 🛎️
+        uses: actions/checkout@v4
+
+      # 2. Configura Node.js para compilar tu proyecto
+      - name: Setup Node.js 🟩
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20' # Puedes usar la versión de Node que prefieras
+          cache: 'npm'
+
+      # 3. Instala las dependencias de tu proyecto
+      - name: Install Dependencies 📦
+        run: npm install
+
+      # 4. Compila el proyecto para producción
+      - name: Build Project 🔨
+        run: npm run build
+
+      # 5. Despliega la carpeta 'dist' a la rama 'gh-pages'
+      - name: Deploy to GitHub Pages 🚀
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages # La rama donde se desplegará el contenido
+          folder: dist     # La carpeta que contiene el build de tu proyecto
