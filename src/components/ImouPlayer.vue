@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { onMounted } from "vue";
+import { ref, onMounted } from "vue";
 // imouPlayer is provided globally by imou-player.js
 declare const imouPlayer: any;
 
@@ -19,6 +19,7 @@ interface IPlayer {
 }
 
 let player: IPlayer;
+const hasError = ref(false); // Variable reactiva para manejar el estado de error
 
 const play = () => {
   player.play();
@@ -53,12 +54,10 @@ const startRecord = () => {
 const stopRecord = () => {
   player.stopRecord();
 };
-
 const destroy = () => {
   player.destroy();
   player = null!;
 };
-
 const getURLparams = () => {
   // Example .../index.html?token=Kt_or21c9258258a64ef1b773e2bf056003&noSerie=AK05419PAZ99E87
   const params: Record<string, string> = {};
@@ -71,19 +70,22 @@ const getURLparams = () => {
     noSerie: params.noSerie || "",
   };
 };
-
 const init = () => {
   if (player) {
     destroy();
   }
-
   const { token, noSerie } = getURLparams();
-
-  console.info("❤️ init player with params:", {
+  console.info("❤️init player with params:", {
     token,
     noSerie,
   });
+  if (!token || !noSerie) {
+    console.error("❌ Missing token or noSerie in URL params");
+    hasError.value = true; // Actualiza el estado de error si faltan parámetros
+    return;
+  }
   
+  hasError.value = false; // Resetea el estado de error si los parámetros son válidos
   player = new imouPlayer({
     id: "imou-player",
     width: 1200,
@@ -91,7 +93,7 @@ const init = () => {
     domain: "https://openapi-or.easy4ip.com",
     deviceId: "AK05419PAZ99E87",
     channelId: "7",
-    token: "Kt_or21c9258258a64ef1b773e2bf056003",
+    token: "Kt_or0974ec65218845cdb85cdef32851bb",
     // 1-Live 直播; 2-Playback 录播
     type: 1,
     // Live 0-HD 高清; 1-SD 标清
@@ -105,22 +107,20 @@ const init = () => {
     code: "AK05419PAZ99E87",
     handleError: (err: unknown) => {
       console.error("handleError", err);
+      hasError.value = true; // Actualiza el estado de error si ocurre un error
     },
   });
   window.player = player;
 };
-
 // --- Simple 2x2 grid test with the same channel/token ---
 const gridIds = ["cell-0", "cell-1", "cell-2", "cell-3"];
 let gridPlayers: any[] = [];
-
 const destroyGrid = () => {
   gridPlayers.forEach(p => {
     try { p && p.destroy && p.destroy(); } catch {}
   });
   gridPlayers = [];
 };
-
 const initGrid = () => {
   destroyGrid();
   
@@ -150,14 +150,12 @@ const initGrid = () => {
     }, index * 500); // 500ms delay between each player
   });
 };
-
 onMounted(() => {
   // init();
 });
 </script>
-
 <template>
-  <div class="imou-player">
+  <div class="imou-player" :class="{ 'error-info': hasError }">
     <div
       id="imou-player"
       style="width: 1200px; height: 700px; background-color: #000"
@@ -178,22 +176,26 @@ onMounted(() => {
       <button @click="stopRecord">Stop Screen Recording</button>
       <button @click="initGrid">Init Grid x4 (same channel)</button>
     </div>
-
     <!-- Simple 2x2 grid containers -->
     <div class="player-grid">
       <div v-for="id in gridIds" :key="id" :id="id" class="player-cell"></div>
     </div>
   </div>
 </template>
-
 <style scoped>
+.error-info {
+  /* Estilos para el estado de error */
+  background-color: #f8d7da;
+  color: #721c24;
+  padding: 10px;
+  border: 1px solid #f5c6cb;
+}
 .player-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
   margin-top: 12px;
 }
-
 .player-cell {
   width: 100%;
   height: 360px; /* Match player height */
@@ -201,7 +203,6 @@ onMounted(() => {
   position: relative;
   overflow: hidden;
 }
-
 .player-cell canvas {
   position: absolute;
   top: 50%;
