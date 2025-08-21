@@ -59,10 +59,31 @@ const destroy = () => {
   player = null!;
 };
 
+const getURLparams = () => {
+  // Example .../index.html?token=Kt_or21c9258258a64ef1b773e2bf056003&noSerie=AK05419PAZ99E87
+  const params: Record<string, string> = {};
+  const urlParams = new URLSearchParams(window.location.search);
+  urlParams.forEach((value, key) => {
+    params[key] = value;
+  });
+  return {
+    token: params.token || "",
+    noSerie: params.noSerie || "",
+  };
+};
+
 const init = () => {
   if (player) {
     destroy();
   }
+
+  const { token, noSerie } = getURLparams();
+
+  console.info("❤️ init player with params:", {
+    token,
+    noSerie,
+  });
+  
   player = new imouPlayer({
     id: "imou-player",
     width: 1200,
