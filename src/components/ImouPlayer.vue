@@ -21,52 +21,32 @@ interface IPlayer {
 let player: IPlayer;
 const hasError = ref(false); // Variable reactiva para manejar el estado de error
 
-const play = () => {
-  player.play();
-};
-const pause = () => {
-  player.pause();
-};
-const stop = () => {
-  player.stop();
-};
-const capture = () => {
-  player.capture();
-};
-const startTalk = () => {
-  player.startTalk();
-};
-const stopTalk = () => {
-  player.stopTalk();
-};
-const volume = (value: number) => {
-  player.volume(value);
-};
-const fullScreen = () => {
-  player.fullScreen();
-};
-const exitFullScreen = () => {
-  player.exitFullScreen();
-};
-const startRecord = () => {
-  player.startRecord();
-};
-const stopRecord = () => {
-  player.stopRecord();
-};
+const play              = () => { player.play() };
+const pause             = () => { player.pause() };
+const stop              = () => { player.stop() };
+const capture           = () => { player.capture() };
+const startTalk         = () => { player.startTalk() };
+const stopTalk          = () => { player.stopTalk() };
+const volume            = (value: number) => { player.volume(value) };
+const fullScreen        = () => { player.fullScreen() };
+const exitFullScreen    = () => { player.exitFullScreen() };
+const startRecord       = () => { player.startRecord() };
+const stopRecord        = () => { player.stopRecord() };
 const destroy = () => {
   player.destroy();
   player = null!;
 };
 const getURLparams = () => {
   // Example .../index.html?token=Kt_or21c9258258a64ef1b773e2bf056003&noSerie=AK05419PAZ99E87
+  // Se utiliza token en la URL para no indicar que es una contraseña. // TODO: encriptar datos
+
   const params: Record<string, string> = {};
   const urlParams = new URLSearchParams(window.location.search);
   urlParams.forEach((value, key) => {
     params[key] = value;
   });
   return {
-    token: params.token || "",
+    dvrPass: params.token || "",
     noSerie: params.noSerie || "",
   };
 };
@@ -82,15 +62,18 @@ const verifyToken = (token: string): boolean => {
  */
 async function generateTokenBear(): Promise<string> {
   return new Promise((resolve, reject) => {
-    fetch('http://10.19.5.79:32003/api/Users/authenticate', {
+    const username = import.meta.env.VITE_API_USERNAME;
+    const password = import.meta.env.VITE_API_PASSWORD;
+    const url = import.meta.env.VITE_API_URL_TOKEN_BEAR
+    fetch(url, {
       method: 'POST',
       headers: {
         'accept': 'application/json',
         'Content-Type': 'application/json-patch+json',
       },
       body: JSON.stringify({
-        username: "admin2",
-        password: "admin",
+        username: username,
+        password: password,
         rememberMe: true
       }),
     })
@@ -123,21 +106,62 @@ async function generateTokenBear(): Promise<string> {
   });
 }
 
+async function generateTokenimoulife(noSerie: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const url = import.meta.env.VITE_API_URL_BASE + 'Vms/GetDahuaToken/' + noSerie;
+    const tokenBear = localStorage.getItem('token_bear');
+    fetch(url, {
+      method: 'GET',
+      headers: {
+        'accept': 'application/json',
+        'Content-Type': 'application/json-patch+json',
+        'Authorization': 'Bearer ' + tokenBear,
+      },
+    })
+    .then((response: any) => {
+      /* 
+      {
+        "tokens": [
+          {
+            "channel": "7",
+            "token": "Kt_or2eaa394100304e8d9f301c52a66720"
+          }
+        ]
+      }      
+       */
+
+      let token = '';
+      if (response.tokens && response.tokens.length > 0) {
+        token = response.tokens[0].token;
+      }
+
+      localStorage.setItem('token_imoulife', token);
+
+      return token
+    })
+    .then(data => {
+      if (data) {
+        return data;
+      }
+    })
+    .catch(error => {
+      reject(`Network error: ${error.message}`);
+    });
+  });
+}
+
 const init = async () => {
   if (player) {
     destroy();
   }
-  const { token, noSerie } = getURLparams();
-  console.info("❤️init player with params:", {
-    token,
-    noSerie,
-  });
+
+  const { dvrPass, noSerie } = getURLparams();
+  console.info("🚀 init player with params:", { dvrPass, noSerie });
 
   // localStorage.token_bear
   if (!localStorage.getItem('token_bear')) {
     try {
       const tokenBear = await generateTokenBear();
-      debugger
     } catch (error) {
       console.error("❌ Error generating token Bearer:", error);
       hasError.value = true; // Actualiza el estado de error si falla la generación del token
@@ -145,14 +169,16 @@ const init = async () => {
     }
   }
 
+  const token = await generateTokenimoulife(noSerie) ?? 'Kt_or2eaa394100304e8d9f301c52a66720';
 
-  if (!token || !noSerie) {
+  if (!dvrPass || !noSerie) {
     console.error("❌ Missing token or noSerie in URL params");
     hasError.value = true; // Actualiza el estado de error si faltan parámetros
     return;
   }
-  
+
   hasError.value = false; // Resetea el estado de error si los parámetros son válidos
+
   player = new imouPlayer({
     id: "imou-player",
     width: 1200,
@@ -171,7 +197,7 @@ const init = async () => {
     //beginTime: "2025-08-07 10:00:00",
     // endTime:   "2025-08-07 10:30:00",
     muted: false,
-    code: "AK05419PAZ99E87",
+    code: noSerie,
     handleError: (err: unknown) => {
       console.error("handleError", err);
       hasError.value = true; // Actualiza el estado de error si ocurre un error
@@ -205,7 +231,7 @@ const initGrid = () => {
         domain: "https://openapi-or.easy4ip.com",
         deviceId: "AK05419PAZ99E87",
         channelId: "7",
-        token: "Kt_ore91a8d8f45db435b93ac297c260bcf",
+        token: localStorage.getItem('token_imoulife'),
         type: 1, // Live
         streamId: 1, // Use SD (1) instead of HD (0) for better performance with multiple streams
         recordType: "cloud", 
@@ -218,7 +244,7 @@ const initGrid = () => {
   });
 };
 onMounted(() => {
-  // init();
+  init();
 });
 </script>
 <template>
