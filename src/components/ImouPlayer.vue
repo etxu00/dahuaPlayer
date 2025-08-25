@@ -70,7 +70,60 @@ const getURLparams = () => {
     noSerie: params.noSerie || "",
   };
 };
-const init = () => {
+
+const verifyToken = (token: string): boolean => {
+  // Simple token verification logic
+  return typeof token === "string" && token.length > 0;
+};
+
+/**
+ * Genera un fetch mediante una promise para obtener un token Bearer y lo guarda en   
+ * localStorage como 'token_bear'.
+ */
+async function generateTokenBear(): Promise<string> {
+  return new Promise((resolve, reject) => {
+    fetch('http://10.19.5.79:32003/api/Users/authenticate', {
+      method: 'POST',
+      headers: {
+        'accept': 'application/json',
+        'Content-Type': 'application/json-patch+json',
+      },
+      body: JSON.stringify({
+        username: "admin2",
+        password: "admin",
+        rememberMe: true
+      }),
+    })
+    .then(response => {
+      if (!response.ok) {
+        return response.text().then((text) => {
+          reject(`Error ${response.status}: ${text}`);
+        });
+      }
+      return response.json();
+    })
+    .then(data => {
+      if (!data || !data.token) {
+        reject('Invalid response from server');
+      }
+
+      const _tokenBear = data?.accessToken?.token;
+      const dateExpire = data?.accessToken?.expiresIn;
+
+      const expirationDate = new Date(Date.now() + dateExpire * 1000);
+
+      localStorage.setItem('token_bear_expiration', expirationDate.toISOString());
+      localStorage.setItem('token_bear', _tokenBear);
+
+      resolve(_tokenBear);
+    })
+    .catch(error => {
+      reject(`Network error: ${error.message}`);
+    });
+  });
+}
+
+const init = async () => {
   if (player) {
     destroy();
   }
@@ -79,6 +132,20 @@ const init = () => {
     token,
     noSerie,
   });
+
+  // localStorage.token_bear
+  if (!localStorage.getItem('token_bear')) {
+    try {
+      const tokenBear = await generateTokenBear();
+      debugger
+    } catch (error) {
+      console.error("❌ Error generating token Bearer:", error);
+      hasError.value = true; // Actualiza el estado de error si falla la generación del token
+      return;
+    }
+  }
+
+
   if (!token || !noSerie) {
     console.error("❌ Missing token or noSerie in URL params");
     hasError.value = true; // Actualiza el estado de error si faltan parámetros
@@ -91,9 +158,9 @@ const init = () => {
     width: 1200,
     height: 700,
     domain: "https://openapi-or.easy4ip.com",
-    deviceId: "AK05419PAZ99E87",
+    deviceId: noSerie, // Use noSerie as deviceId
     channelId: "7",
-    token: "Kt_or0974ec65218845cdb85cdef32851bb",
+    token: token,
     // 1-Live 直播; 2-Playback 录播
     type: 1,
     // Live 0-HD 高清; 1-SD 标清
