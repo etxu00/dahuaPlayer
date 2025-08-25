@@ -254,23 +254,23 @@ onMounted(() => {
       style="width: 1200px; height: 700px; background-color: #000"
     ></div>
     <div>
-      <button @click="init">Init imouPlayer</button>
-      <button @click="play">Play</button>
-      <button @click="pause">Pause</button>
-      <button @click="stop">Stop</button>
-      <button @click="capture">Capture</button>
-      <button @click="startTalk">Start Talk</button>
-      <button @click="stopTalk">Stop Talk</button>
-      <button @click="() => volume(1)">Open Volume</button>
-      <button @click="() => volume(0)">Close Volume</button>
-      <button @click="fullScreen">FullScreen</button>
-      <button @click="exitFullScreen">Exit FullScreen</button>
-      <button @click="startRecord">Start Screen Recording</button>
-      <button @click="stopRecord">Stop Screen Recording</button>
-      <button @click="initGrid">Init Grid x4 (same channel)</button>
+      <button style="display: none;" @click="init">Init imouPlayer</button>
+      <button style="display: none;" @click="play">Play</button>
+      <button style="display: none;" @click="pause">Pause</button>
+      <button style="display: none;" @click="stop">Stop</button>
+      <button style="display: none;" @click="capture">Capture</button>
+      <button style="display: none;" @click="startTalk">Start Talk</button>
+      <button style="display: none;" @click="stopTalk">Stop Talk</button>
+      <button style="display: none;" @click="() => volume(1)">Open Volume</button>
+      <button style="display: none;" @click="() => volume(0)">Close Volume</button>
+      <button style="display: none;" @click="fullScreen">FullScreen</button>
+      <button style="display: none;" @click="exitFullScreen">Exit FullScreen</button>
+      <button style="display: none;" @click="startRecord">Start Screen Recording</button>
+      <button style="display: none;" @click="stopRecord">Stop Screen Recording</button>
+      <button style="display: none;" @click="initGrid">Init Grid x4 (same channel)</button>
     </div>
     <!-- Simple 2x2 grid containers -->
-    <div class="player-grid">
+    <div class="player-grid" style="display: none;">
       <div v-for="id in gridIds" :key="id" :id="id" class="player-cell"></div>
     </div>
   </div>
