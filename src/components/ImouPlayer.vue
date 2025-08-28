@@ -258,7 +258,7 @@ onMounted(() => {
       <button style="display: none;" @click="init">Init</button>
       <button style="display: none;" @click="play">Play</button>
       <button style="display: none;" @click="pause">Pause</button>
-      <button style="display: none;" @click="stop">Stop</button>
+      <button style="" @click="stop">Stop</button>
       <button style="display: none;" @click="capture">Capture</button>
       <button style="display: none;" @click="startTalk">Start Talk</button>
       <button style="display: none;" @click="stopTalk">Stop Talk</button>
