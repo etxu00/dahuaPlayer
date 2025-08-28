@@ -26,7 +26,7 @@ const pause             = () => { player.pause() };
 const stop              = () => { 
   player.stop();
   hasError.value = false;
-  window.close();
+  setTimeout(() => window.close(), 1000);
 };
 const capture           = () => { player.capture() };
 const startTalk         = () => { player.startTalk() };
