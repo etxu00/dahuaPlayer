@@ -254,7 +254,7 @@ onMounted(() => {
       style="width: 1200px; height: 700px; background-color: #000"
     ></div>
     <div>
-      <button style="display: none;" @click="init">Init imouPlayer</button>
+      <button style="display: none;" @click="init">Init</button>
       <button style="display: none;" @click="play">Play</button>
       <button style="display: none;" @click="pause">Pause</button>
       <button style="display: none;" @click="stop">Stop</button>
