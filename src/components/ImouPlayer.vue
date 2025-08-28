@@ -23,7 +23,11 @@ const hasError = ref(false); // Variable reactiva para manejar el estado de erro
 
 const play              = () => { player.play() };
 const pause             = () => { player.pause() };
-const stop              = () => { player.stop() };
+const stop              = () => { 
+  player.stop();
+  hasError.value = false;
+  window.close();
+};
 const capture           = () => { player.capture() };
 const startTalk         = () => { player.startTalk() };
 const stopTalk          = () => { player.stopTalk() };
@@ -48,107 +52,109 @@ const getURLparams = () => {
   return {
     dvrPass: params.token || "",
     noSerie: params.noSerie || "",
+    channel: params.channel || "7",
   };
 };
 
-const verifyToken = (token: string): boolean => {
-  // Simple token verification logic
-  return typeof token === "string" && token.length > 0;
-};
-
 /**
- * Genera un fetch mediante una promise para obtener un token Bearer y lo guarda en   
- * localStorage como 'token_bear'.
+ * Función auxiliar para obtener y guardar tokens en localStorage.
  */
-async function generateTokenBear(): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const username = import.meta.env.VITE_API_USERNAME;
-    const password = import.meta.env.VITE_API_PASSWORD;
-    const url = import.meta.env.VITE_API_URL_TOKEN_BEAR
-    fetch(url, {
-      method: 'POST',
-      headers: {
-        'accept': 'application/json',
-        'Content-Type': 'application/json-patch+json',
-      },
-      body: JSON.stringify({
-        username: username,
-        password: password,
-        rememberMe: true
-      }),
-    })
-    .then(response => {
-      if (!response.ok) {
-        return response.text().then((text) => {
-          reject(`Error ${response.status}: ${text}`);
-        });
-      }
-      return response.json();
-    })
-    .then(response => {
-      if (!response?.accessToken) {
-        reject('Invalid response from server');
-      }
-
-      const _tokenBear = response?.accessToken?.token;
-      const dateExpire = response?.accessToken?.expiresIn;
-
-      const expirationDate = new Date(Date.now() + dateExpire * 1000);
-
-      localStorage.setItem('token_bear_expiration', expirationDate.toISOString());
-      localStorage.setItem('token_bear', _tokenBear);
-
-      resolve(_tokenBear);
-    })
-    .catch(error => {
-      reject(`Network error: ${error.message}`);
-    });
-  });
+function getStoredTokens(key: string): any[] {
+  return localStorage.getItem(key) ? JSON.parse(localStorage.getItem(key) || '[]') : [];
 }
 
-async function generateTokenimoulife(noSerie: string): Promise<string> {
-  try {
-    const url = import.meta.env.VITE_API_URL_BASE + 'Vms/GetDahuaToken/' + noSerie;
-    const tokenBear = localStorage.getItem('token_bear');
+function saveStoredTokens(key: string, tokens: any[]): void {
+  localStorage.setItem(key, JSON.stringify(tokens));
+}
 
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'accept': 'application/json',
-        'Content-Type': 'application/json-patch+json',
-        'Authorization': 'Bearer ' + tokenBear,
-      },
-    });
+/**
+ * Verifica si un token es válido o necesita ser actualizado.
+ */
+function isTokenValid(expirationDate: string): boolean {
+  return new Date(expirationDate) > new Date();
+}
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
+/**
+ * Genera un token Bearer y lo guarda en localStorage.
+ */
+async function generateTokenBear(): Promise<string> {
+  const username = import.meta.env.VITE_API_USERNAME;
+  const password = import.meta.env.VITE_API_PASSWORD;
+  const url = import.meta.env.VITE_API_URL_TOKEN_BEAR;
 
-    /**
-     * EJEMPLO DE RESPUESTA
-     * {
-     *   "tokens": [
-     *     {
-     *       "channel": "7",     // Numero de canales del dispositivo
-     *       "token": "Kt_or..." // TOKEN ImouLife
-     *     }
-     *   ]
-     * }
-     *
-    */
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'accept': 'application/json',
+      'Content-Type': 'application/json-patch+json',
+    },
+    body: JSON.stringify({ username, password, rememberMe: true }),
+  });
 
-    const data = await response.json();
-
-    let token = '';
-    if (data.tokens && data.tokens.length > 0) {
-      token = data.tokens[0].token;
-    }
-
-    localStorage.setItem('token_imoulife', token);
-    return token;
-  } catch (error: any) {
-    throw new Error(`Network error: ${error.message}`);
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Error ${response.status}: ${errorText}`);
   }
+
+  const data = await response.json();
+  if (!data?.accessToken) {
+    throw new Error('Invalid response from server');
+  }
+
+  const token = data.accessToken.token;
+  const expirationDate = new Date(Date.now() + data.accessToken.expiresIn * 1000).toISOString();
+
+  localStorage.setItem('token_bear', token);
+  localStorage.setItem('token_bear_expiration', expirationDate);
+
+  return token;
+}
+
+/**
+ * Verifica o genera un nuevo token para un dispositivo (noSerie).
+ */
+async function getOrGenerateToken(noSerie: string): Promise<string> {
+  const tokensImouLife = getStoredTokens('tokens_imoulife');
+  const existingToken = tokensImouLife.find((token: any) => token.no_serie === noSerie);
+
+  if (existingToken && isTokenValid(existingToken.expiration_date)) {
+    console.info("✅ El token existente sigue siendo válido, reutilizándose.");
+    return existingToken.token;
+  }
+  console.info("⚠️ El token falta o ha expirado, generando uno nuevo.");
+
+  const tokenBear = localStorage.getItem('token_bear') || await generateTokenBear();
+  const url = `${import.meta.env.VITE_API_URL_BASE}Vms/GetDahuaToken/${noSerie}`;
+
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'accept': 'application/json',
+      'Content-Type': 'application/json-patch+json',
+      'Authorization': `Bearer ${tokenBear}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const newToken = {
+    channels: data.tokens[0].channel,
+    expiration_date: new Date(Date.now() + (import.meta.env.VITE_TOKEN_EXPIRATION_MINUTES || 7200) * 60 * 1000).toISOString(),
+    no_serie: noSerie,
+    token: data.tokens[0].token,
+  };
+
+  if (existingToken) {
+    Object.assign(existingToken, newToken); // Actualiza el token existente
+  } else {
+    tokensImouLife.push(newToken); // Agrega un nuevo token
+  }
+
+  saveStoredTokens('tokens_imoulife', tokensImouLife);
+  return newToken.token;
 }
 
 const init = async () => {
@@ -156,26 +162,16 @@ const init = async () => {
     destroy();
   }
 
-  const { dvrPass, noSerie } = getURLparams();
-  console.info("🚀 init player with params:", { dvrPass, noSerie });
+  const { dvrPass, noSerie, channel } = getURLparams();
+  let tokensImouLife = null;
+  console.info("🚀 iniciar reproductor con parámetros:", { dvrPass, noSerie });
 
-  // localStorage.token_bear
-  if (!localStorage.getItem('token_bear')) {
-    try {
-      await generateTokenBear();
-    } catch (error) {
-      console.error("❌ Error generating token Bearer:", error);
-      hasError.value = true; // Actualiza el estado de error si falla la generación del token
-      return;
-    }
-  }
-
-  const token = await generateTokenimoulife(noSerie) ?? 'Kt_or2eaa394100304e8d9f301c52a66720';
-
-  if (!dvrPass || !noSerie) {
-    console.error("❌ Missing token or noSerie in URL params");
-    hasError.value = true; // Actualiza el estado de error si faltan parámetros
-    return;
+  try {
+    tokensImouLife = await getOrGenerateToken(noSerie);
+    console.info("✅ Token generado con éxito:", tokensImouLife);
+  } catch (error) {
+    console.error("❌ Error al generar el token:", error);
+    hasError.value = true; // Actualiza el estado de error si falla la generación del token
   }
 
   hasError.value = false; // Resetea el estado de error si los parámetros son válidos
@@ -186,16 +182,14 @@ const init = async () => {
     height: 700,
     domain: "https://openapi-or.easy4ip.com",
     deviceId: noSerie, // Use noSerie as deviceId
-    channelId: "7",
-    token: token,
-    // 1-Live 直播; 2-Playback 录播
-    type: 1,
-    // Live 0-HD 高清; 1-SD 标清
-    streamId: 0,
+    channelId: channel || 7,
+    token: tokensImouLife,
+    type: 1, // 1 = Live; 2 = Playback
+    streamId: 0, // Live 0-HD 高清; 1-SD 标清
     // 录播 云录像 cloud 本地录像 localRecord 默认 云录像
     // Playback, cloud-Cloud Video; localRecord-Local Video. Default Cloud Video
     recordType: "localRecord",     // or "localRecord"
-    //beginTime: "2025-08-07 10:00:00",
+    // beginTime: "2025-08-07 10:00:00",
     // endTime:   "2025-08-07 10:30:00",
     muted: false,
     code: noSerie,
@@ -250,10 +244,7 @@ onMounted(() => {
 </script>
 <template>
   <div class="imou-player" :class="{ 'error-info': hasError }">
-    <div
-      id="imou-player"
-      style="width: 1200px; height: 700px; background-color: #000"
-    ></div>
+    <div id="imou-player" style="width: 1200px; height: 700px; background-color: #000"></div>
     <div>
       <button style="display: none;" @click="init">Init</button>
       <button style="display: none;" @click="play">Play</button>
@@ -277,34 +268,34 @@ onMounted(() => {
   </div>
 </template>
 <style scoped>
-.error-info {
-  /* Estilos para el estado de error */
-  background-color: #f8d7da;
-  color: #721c24;
-  padding: 10px;
-  border: 1px solid #f5c6cb;
-}
-.player-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-top: 12px;
-}
-.player-cell {
-  width: 100%;
-  height: 360px; /* Match player height */
-  background: #000;
-  position: relative;
-  overflow: hidden;
-}
-.player-cell canvas {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  max-width: 100%;
-  max-height: 100%;
-  width: auto;
-  height: auto;
-}
+  .error-info {
+    /* Estilos para el estado de error */
+    background-color: #f8d7da;
+    color: #721c24;
+    padding: 10px;
+    border: 1px solid #f5c6cb;
+  }
+  .player-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .player-cell {
+    width: 100%;
+    height: 360px; /* Match player height */
+    background: #000;
+    position: relative;
+    overflow: hidden;
+  }
+  .player-cell canvas {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+  }
 </style>
