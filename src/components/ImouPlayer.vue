@@ -85,13 +85,13 @@ async function generateTokenBear(): Promise<string> {
       }
       return response.json();
     })
-    .then(data => {
-      if (!data || !data.token) {
+    .then(response => {
+      if (!response?.accessToken) {
         reject('Invalid response from server');
       }
 
-      const _tokenBear = data?.accessToken?.token;
-      const dateExpire = data?.accessToken?.expiresIn;
+      const _tokenBear = response?.accessToken?.token;
+      const dateExpire = response?.accessToken?.expiresIn;
 
       const expirationDate = new Date(Date.now() + dateExpire * 1000);
 
@@ -107,47 +107,48 @@ async function generateTokenBear(): Promise<string> {
 }
 
 async function generateTokenimoulife(noSerie: string): Promise<string> {
-  return new Promise((resolve, reject) => {
+  try {
     const url = import.meta.env.VITE_API_URL_BASE + 'Vms/GetDahuaToken/' + noSerie;
     const tokenBear = localStorage.getItem('token_bear');
-    fetch(url, {
+
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         'accept': 'application/json',
         'Content-Type': 'application/json-patch+json',
         'Authorization': 'Bearer ' + tokenBear,
       },
-    })
-    .then((response: any) => {
-      /* 
-      {
-        "tokens": [
-          {
-            "channel": "7",
-            "token": "Kt_or2eaa394100304e8d9f301c52a66720"
-          }
-        ]
-      }      
-       */
-
-      let token = '';
-      if (response.tokens && response.tokens.length > 0) {
-        token = response.tokens[0].token;
-      }
-
-      localStorage.setItem('token_imoulife', token);
-
-      return token
-    })
-    .then(data => {
-      if (data) {
-        return data;
-      }
-    })
-    .catch(error => {
-      reject(`Network error: ${error.message}`);
     });
-  });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    /**
+     * EJEMPLO DE RESPUESTA
+     * {
+     *   "tokens": [
+     *     {
+     *       "channel": "7",     // Numero de canales del dispositivo
+     *       "token": "Kt_or..." // TOKEN ImouLife
+     *     }
+     *   ]
+     * }
+     *
+    */
+
+    const data = await response.json();
+
+    let token = '';
+    if (data.tokens && data.tokens.length > 0) {
+      token = data.tokens[0].token;
+    }
+
+    localStorage.setItem('token_imoulife', token);
+    return token;
+  } catch (error: any) {
+    throw new Error(`Network error: ${error.message}`);
+  }
 }
 
 const init = async () => {
@@ -161,7 +162,7 @@ const init = async () => {
   // localStorage.token_bear
   if (!localStorage.getItem('token_bear')) {
     try {
-      const tokenBear = await generateTokenBear();
+      await generateTokenBear();
     } catch (error) {
       console.error("❌ Error generating token Bearer:", error);
       hasError.value = true; // Actualiza el estado de error si falla la generación del token
