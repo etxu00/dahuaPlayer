@@ -23,8 +23,8 @@ let _channel = "1";
 let _password = "";
 let _noSerie = "";
 let _tokenImou = "";
+let gridIds = ["cell-0", "cell-1"];
 
-const gridIds = ["cell-0", "cell-1", "cell-2", "cell-3"];
 const loading = ref(true); // Variable reactiva para manejar el estado de error
 const hasError = ref(false); // Variable reactiva para manejar el estado de error
 const msgError = ref(""); // Variable para almacenar el mensaje de error
@@ -59,6 +59,21 @@ const destroyGrid = () => {
 const initGrid = () => {
   destroyGrid();
 
+  const tokens = localStorage.getItem('tokens_imou')
+    ? JSON.parse(localStorage.getItem('tokens_imou') || '[]')
+    : [];
+  
+  const tokenTMP = tokens.find((token: any) => token.no_serie === _noSerie);
+  const gridChannels = tokenTMP.tokens;
+
+  if (!gridChannels.length) {
+    return;
+  }
+
+  gridChannels.forEach((channel: any, index: number) => {
+    gridIds[index] = `cell-${index}`;
+  });
+
   // Add delay between player initializations to avoid conflicts
   gridIds.forEach((id, index) => {
     setTimeout(() => {
@@ -72,8 +87,8 @@ const initGrid = () => {
         height: 360,
         domain: "https://openapi-or.easy4ip.com",
         deviceId: _noSerie,
-        channelId: Number(_channel) - 1,
-        token: _tokenImou,
+        channelId: gridChannels[index] ? Number(gridChannels[index].channel) : 0,
+        token: gridChannels[index] ? gridChannels[index].token : _tokenImou,
         type: 1, // Live
         streamId: 1, // Use SD (1) instead of HD (0) for better performance with multiple streams
         recordType: "cloud", 
@@ -147,6 +162,12 @@ function valideteURLparams() {
   }
 }
 
+function generateGrid(token: string) {
+  _tokenImou = token;
+  initGrid();
+  loading.value = false;
+}
+
 async function validateTokenImou(): Promise<any> {
   const tokensImou = localStorage.getItem('tokens_imou')
     ? JSON.parse(localStorage.getItem('tokens_imou') || '[]')
@@ -164,7 +185,7 @@ async function validateTokenImou(): Promise<any> {
         expiration_date: new Date(Date.now() + (import.meta.env.VITE_TOKEN_EXPIRATION_MINUTES || 7200) * 60 * 1000).toISOString(),
         tokens: newToken.tokens,
       });
-      
+
       localStorage.setItem('tokens_imou', JSON.stringify(tokensImou));
     } catch (error) {
       loading.value = false;
@@ -203,6 +224,8 @@ async function validateTokenImou(): Promise<any> {
         hasError.value = true;
         msgError.value = "El canal especificado no existe en el dispositivo.";
       }
+
+
     }
   }
 }
