@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { ref, onMounted } from "vue";
+import CryptoJS from 'crypto-js';
 
 declare const imouPlayer: any;
 
@@ -181,8 +182,9 @@ async function validateTokenImou(): Promise<any> {
       const newToken = await getTokenImou();
 
       tokensImou.push({
+        expiration_date: new Date(Date.now() + (import.meta.env.VITE_TOKEN_EXPIRATION_MINUTES || 7200)).toISOString(),
+        issue_date: new Date().toISOString(),
         no_serie: _noSerie,
-        expiration_date: new Date(Date.now() + (import.meta.env.VITE_TOKEN_EXPIRATION_MINUTES || 7200) * 60 * 1000).toISOString(),
         tokens: newToken.tokens,
       });
 
@@ -268,15 +270,33 @@ async function getTokenImou(): Promise<any> {
 
 const getURLparams = () => {
   // Example .../index.html?token=...&noSerie=...&channel=1
-  // Se utiliza token en la URL para no indicar que es una contraseña. // TODO: encriptar datos
-
   const params: Record<string, string> = {};
   const urlParams = new URLSearchParams(window.location.search);
   urlParams.forEach((value, key) => params[key] = value);
   _channel = params.channel || "";
-  _password = params.token || "";
+  _password = decryptPassword(params.token) || "";
   _noSerie = params.noSerie || "";
 };
+
+function decryptPassword(encryptedPassword: string): string {
+  const secretKey = import.meta.env.VITE_ENCRYPTION_KEY || '';
+  try {
+    if (!encryptedPassword || !secretKey) {
+      throw new Error("La contraseña o la clave de descifrado no están definidas.");
+    }
+    const bytes = CryptoJS.AES.decrypt(encryptedPassword, secretKey);
+    const decryptedPassword = bytes.toString(CryptoJS.enc.Utf8);
+
+    if (!decryptedPassword) {
+      throw new Error("La contraseña descifrada está vacía.");
+    }
+
+    return decryptedPassword;
+  } catch (error) {
+    console.error("Error al descifrar la contraseña:", error);
+    throw error; // Lanza el error para manejarlo en otro lugar si es necesario
+  }
+}
 
 /**
  * onMounted se ejecuta cuando el componente se monta en el DOM.
