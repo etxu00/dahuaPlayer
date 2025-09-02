@@ -107,7 +107,7 @@ const init = async () => {
   valideteURLparams();
 
   // 2. Validamos si existe token para el Dispositivo
-  _tokenImou = await validateTokenImou();
+  await validateTokenImou() ;
 
   hasError.value = false; // Resetea el estado de error si los parámetros son válidos
 
@@ -169,7 +169,158 @@ function generateGrid(token: string) {
   loading.value = false;
 }
 
-async function validateTokenImou(): Promise<any> {
+// --------------------------------------------------
+
+/**
+ * VALIDACIÓN DEL TOKEN IMOU.   
+ *
+ * Verifica si existe un token válido para el dispositivo identificado por su número de serie.    
+ * Si el token no existe o ha expirado, intenta obtener uno nuevo.
+ *
+ * @returns {string} `token` El token válido si existe y no ha expirado.
+ * @returns {void} Si el token no existe, ha expirado y no se pudo obtener uno nuevo.
+ *
+ * @throws {Error} Si ocurre un error durante el proceso de validación o renovación del token.
+ */
+async function validateTokenImou(): Promise<string | void> {
+  try {
+    const tokensImou = getStoredTokensImou();
+    const deviceToken = findTokenBySerie(tokensImou, _noSerie);
+
+    if (!deviceToken) {
+      await handleMissingToken(tokensImou);
+      return;
+    }
+
+    if (isTokenExpired(deviceToken.expiration_date)) {
+      await handleExpiredToken(tokensImou, deviceToken);
+      return;
+    }
+
+    return handleValidToken(deviceToken.tokens, _channel);
+  } catch (error) {
+    handleError("Error al procesar el token del dispositivo.");
+  }
+}
+
+/**
+ * MANEJO DE TOKEN FALTANTE.   
+ * 
+ * Manejo de casos específicos en la validación del token.
+ * @param {any} tokensImou - Lista de tokens almacenados.
+ */
+async function handleMissingToken(tokensImou: any): Promise<void> {
+  await handleNewToken(tokensImou);
+}
+
+async function handleExpiredToken(tokensImou: any, tokenTMP: any): Promise<void> {
+  await handleTokenRenewal(tokensImou, tokenTMP);
+}
+
+function handleValidToken(tokens: any, channel: any): string {
+  return getChannelToken(tokens, channel);
+}
+
+/**
+ * OBTENCIÓN DE TOKEN IMOU ALMACENADOS.    
+ * 
+ * Obtiene los tokens almacenados en el `localStorage`.
+ * @returns {any[]} Lista de tokens almacenados.
+ */
+function getStoredTokensImou(): any[] {
+  return JSON.parse(localStorage.getItem('tokens_imou') || '[]');
+}
+
+/**
+ * BÚSQUEDA DE TOKEN POR NÚMERO DE SERIE.   
+ * 
+ * Busca los tokens de un dispositivo específico por su número de serie. El item contiene    
+ * los tokens para cada canal del dispositivo (DRV).
+ * @param {any[]} tokens - Lista de tokens almacenados.
+ * @param {string} noSerie - Número de serie del dispositivo (DRV).
+ * @returns {any} El token encontrado o `undefined` si no se encuentra.
+ */
+function findTokenBySerie(tokens: any[], noSerie: string): any {
+  return tokens.find((token: any) => token.no_serie === noSerie);
+}
+
+/**
+ * VERIFICACIÓN DE EXPIRACIÓN DEL TOKEN.    
+ * 
+ * Verifica si un token ha expirado comparando la fecha actual con la fecha de expiración del token.
+ * @param {string} expirationDate - Fecha de expiración del token en formato ISO.
+ * @returns {boolean} `true` si el token ha expirado, `false` en caso contrario.
+ */
+function isTokenExpired(expirationDate: string): boolean {
+  return new Date() >= new Date(expirationDate);
+}
+
+/**
+ * MANEJO DE TOKEN NUEVO Y RENOVACIÓN.    
+ * 
+ * Funciones para manejar la obtención y renovación de tokens Imou.
+ * 
+ * @param {any} tokensImou - Lista de tokens almacenados.
+ */
+async function handleNewToken(tokensImou: any[]): Promise<void> {
+  try {
+    const newToken = await getTokenImou();
+    const expirationDate = calculateExpirationDate();
+
+    tokensImou.push({
+      expiration_date: expirationDate,
+      issue_date: new Date().toISOString(),
+      no_serie: _noSerie,
+      tokens: newToken.tokens,
+    });
+
+    _tokenImou = getChannelToken(newToken.tokens, _channel) || "";
+    saveTokens(tokensImou);
+  } catch {
+    handleError("Error al obtener el token del dispositivo.");
+  }
+}
+
+async function handleTokenRenewal(tokensImou: any[], tokenTMP: any): Promise<void> {
+  try {
+    const newToken = await getTokenImou();
+    tokenTMP.tokens = newToken.tokens;
+    tokenTMP.expiration_date = calculateExpirationDate();
+
+    saveTokens(tokensImou);
+  } catch {
+    handleError("Error al renovar el token del dispositivo.");
+  }
+}
+
+function getChannelToken(tokens: any[], channel: string): string | void {
+  const channelIndex = Number(channel) - 1;
+  const channelToken = tokens.find((t: any) => t.channel.toString() === channelIndex.toString());
+
+  if (channelToken) {
+    loading.value = false;
+    return channelToken.token;
+  } else {
+    handleError("El canal especificado no existe en el dispositivo.");
+  }
+}
+
+function calculateExpirationDate(): string {
+  const expirationMinutes = (import.meta.env.VITE_TOKEN_EXPIRATION_MINUTES_HRS || 7200) * 60 * 1000;
+  return new Date(Date.now() + expirationMinutes).toISOString();
+}
+
+function saveTokens(tokens: any[]): void {
+  localStorage.setItem('tokens_imou', JSON.stringify(tokens));
+}
+
+function handleError(message: string): void {
+  loading.value = false;
+  hasError.value = true;
+  msgError.value = message;
+}
+
+async function _validateTokenImou(): Promise<any> {
   const tokensImou = localStorage.getItem('tokens_imou')
     ? JSON.parse(localStorage.getItem('tokens_imou') || '[]')
     : [];
@@ -226,8 +377,6 @@ async function validateTokenImou(): Promise<any> {
         hasError.value = true;
         msgError.value = "El canal especificado no existe en el dispositivo.";
       }
-
-
     }
   }
 }
@@ -249,7 +398,7 @@ async function getTokenBearer(): Promise<string> {
   localStorage.setItem('token_bear', token);
   localStorage.setItem('token_bear_expiration', expirationDate);
 
-  return data
+  return token;
 }
 
 async function getTokenImou(): Promise<any> {
@@ -304,12 +453,8 @@ function decryptPassword(encryptedPassword: string): string {
 onMounted(() => init());
 </script>
 <template>
-  <div v-if="loading">
-    Cargando...
-  </div>
-  <div class="error-info" v-if="hasError">
-    <p>{{ msgError }}</p>
-  </div>
+  <div v-if="loading">Cargando...</div>
+  <div class="error-info" v-if="hasError"><p>{{ msgError }}</p></div>
   <div class="imou-player" v-if="!hasError && !loading">
     <div id="imou-player" style="width: 1200px; height: 700px; background-color: #000"></div>
     <div>
