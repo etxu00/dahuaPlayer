@@ -81,13 +81,6 @@ const initGrid = () => {
     }, index * 500); // 500ms delay between each player
   });
 };
-
-
-/**
- * onMounted se ejecuta cuando el componente se monta en el DOM.
- */
-onMounted(() => inicio());
-
 const cargando = ref(true); // Variable reactiva para manejar el estado de error
 const errorGeneral = ref(false); // Variable reactiva para manejar el estado de error
 const descripcionError = ref(""); // Variable para almacenar el mensaje de error
@@ -164,10 +157,20 @@ async function generarTokenDRV() {
   _tokenCanal = _tokensDRV.tokens.find((t: any) => t.channel.toString() === (Number(_canal) - 1).toString())
 }
 
-async function iniciarStream() {
+function iniciarStream() {
   if (errorGeneral.value) {
     return
   }
+
+  const playerContainer = document.getElementById("imou-player");
+  if (!playerContainer) {
+    console.error("El contenedor 'imou-player' no existe en el DOM.");
+    errorGeneral.value = true;
+    cargando.value = false;
+    descripcionError.value = "Error interno: contenedor de reproductor no encontrado."
+    return;
+  }
+
   const deviceId = _numSerie // Use noSerie as deviceId
   const channelId = Number(_canal) - 1 // Se requiere restar 1. Índice basado en cero (Canal 1 = 0, Canal 2 = 1, etc.)
   const token = _tokenCanal.token
@@ -203,7 +206,7 @@ async function inicio() {
     await validarParametrosURL();
     await validarTokenDRV();
     await validarVigenciaTokenDRV();
-    await iniciarStream();
+    iniciarStream();
   } catch (error) {
     console.error("Error en el flujo de inicio:", error)
     cargando.value = false
@@ -325,6 +328,14 @@ async function validarVigenciaTokenDRV() {
     await generarTokenDRV()
   }
 }
+
+/**
+ * onMounted se ejecuta cuando el componente se monta en el DOM.
+ */
+onMounted(() => {
+  inicio()
+  cargando.value = false
+});
 </script>
 <template>
   <div v-if="cargando">Cargando...</div>
