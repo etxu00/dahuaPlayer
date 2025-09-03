@@ -330,7 +330,7 @@ async function validarVigenciaTokenDRV() {
 }
 
 /**
- * onMounted se ejecuta cuando el componente se monta en el DOM.
+ * onMounted se ejecuta cuando el componente se monta en el DOM.4u!'5eIs0n\P
  */
 onMounted(() => {
   inicio()
@@ -340,24 +340,175 @@ onMounted(() => {
 <template>
   <div v-if="cargando">Cargando...</div>
   <div class="error-info" v-if="errorGeneral"><p>{{ descripcionError }}</p></div>
-  <div class="imou-player" v-if="!errorGeneral && !cargando">
-    <div id="imou-player" style="width: 1200px; height: 700px; background-color: #000"></div>
-    <div>
-      <button @click="play">Reproducir</button>
-      <button @click="pause">Pausa</button>
-      <button style="" @click="stop">Detener</button>
-      <button @click="capture">Captura</button>
-      <button @click="startTalk">Iniciar conversación</button>
-      <button @click="stopTalk">Detener conversación</button>
-      <button @click="() => volume(1)">Activar volumen</button>
-      <button @click="() => volume(0)">Desactivar volumen</button>
-      <button @click="fullScreen">Pantalla completa</button>
-      <button @click="exitFullScreen">Salir de pantalla completa</button>
-      <button @click="startRecord">Iniciar grabación de pantalla</button>
-      <button @click="stopRecord">Detener grabación de pantalla</button>
-      <button @click="initGrid">Iniciar cuadrícula x4 (mismo canal)</button>
+  <header>
+    <div class="container">
+      <div class="btn">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+          fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round">
+          <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+          <path d="M12 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
+          <path d="M12 19m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
+          <path d="M12 5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
+        </svg>
+      </div>
+      <div class="dropdown">
+        <button @click="play">
+          <svg  xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M7 4v16l13 -8z" />
+          </svg>
+          <span>Reproducir</span>
+        </button>
+        <button @click="pause">
+          <svg  xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M6 5m0 1a1 1 0 0 1 1 -1h2a1 1 0 0 1 1 1v12a1 1 0 0 1 -1 1h-2a1 1 0 0 1 -1 -1z" />
+            <path d="M14 5m0 1a1 1 0 0 1 1 -1h2a1 1 0 0 1 1 1v12a1 1 0 0 1 -1 1h-2a1 1 0 0 1 -1 -1z" />
+          </svg>
+          <span>Pausa</span>
+        </button>
+        <button style="" @click="stop">
+          <svg  xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M5 5m0 2a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2z" />
+          </svg>
+          <span>Detener</span>
+        </button>
+        <button @click="capture">
+          <svg  xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M5 7h1a2 2 0 0 0 2 -2a1 1 0 0 1 1 -1h6a1 1 0 0 1 1 1a2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2" />
+            <path d="M9 13a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" />
+          </svg>
+          <span>Captura</span>
+        </button>
+        <button @click="startTalk">
+          <svg  xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M9 2m0 3a3 3 0 0 1 3 -3h0a3 3 0 0 1 3 3v5a3 3 0 0 1 -3 3h0a3 3 0 0 1 -3 -3z" />
+            <path d="M5 10a7 7 0 0 0 14 0" />
+            <path d="M8 21l8 0" />
+            <path d="M12 17l0 4" />
+          </svg>
+          <span>Iniciar conversación</span>
+        </button>
+        <button @click="stopTalk">
+          <svg  xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M3 3l18 18" />
+            <path d="M9 5a3 3 0 0 1 6 0v5a3 3 0 0 1 -.13 .874m-2 2a3 3 0 0 1 -3.87 -2.872v-1" />
+            <path d="M5 10a7 7 0 0 0 10.846 5.85m2 -2a6.967 6.967 0 0 0 1.152 -3.85" />
+            <path d="M8 21l8 0" />
+            <path d="M12 17l0 4" />
+          </svg>
+          <span>Detener conversación</span>
+        </button>
+        <button @click="() => volume(1)">
+          <svg  xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M15 8a5 5 0 0 1 0 8" />
+            <path d="M17.7 5a9 9 0 0 1 0 14" />
+            <path d="M6 15h-2a1 1 0 0 1 -1 -1v-4a1 1 0 0 1 1 -1h2l3.5 -4.5a.8 .8 0 0 1 1.5 .5v14a.8 .8 0 0 1 -1.5 .5l-3.5 -4.5" />
+          </svg>
+          <span>Activar volumen</span>
+        </button>
+        <button @click="() => volume(0)">
+          <svg  xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M15 8a5 5 0 0 1 1.912 4.934m-1.377 2.602a5 5 0 0 1 -.535 .464" />
+            <path d="M17.7 5a9 9 0 0 1 2.362 11.086m-1.676 2.299a9 9 0 0 1 -.686 .615" />
+            <path d="M9.069 5.054l.431 -.554a.8 .8 0 0 1 1.5 .5v2m0 4v8a.8 .8 0 0 1 -1.5 .5l-3.5 -4.5h-2a1 1 0 0 1 -1 -1v-4a1 1 0 0 1 1 -1h2l1.294 -1.664" />
+            <path d="M3 3l18 18" />
+          </svg>
+          <span>Desactivar volumen</span>
+        </button>
+        <button @click="fullScreen">
+          <svg  xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M16 4l4 0l0 4" />
+            <path d="M14 10l6 -6" />
+            <path d="M8 20l-4 0l0 -4" />
+            <path d="M4 20l6 -6" />
+            <path d="M16 20l4 0l0 -4" />
+            <path d="M14 14l6 6" />
+            <path d="M8 4l-4 0l0 4" />
+            <path d="M4 4l6 6" />
+          </svg>
+          <span>Pantalla completa</span>
+        </button>
+        <button @click="exitFullScreen">
+          <svg  xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M5 9l4 0l0 -4" />
+            <path d="M3 3l6 6" />
+            <path d="M5 15l4 0l0 4" />
+            <path d="M3 21l6 -6" />
+            <path d="M19 9l-4 0l0 -4" />
+            <path d="M15 9l6 -6" />
+            <path d="M19 15l-4 0l0 4" />
+            <path d="M15 15l6 6" />
+            </svg>
+          <span>Salir de pantalla completa</span>
+        </button>
+        <button @click="startRecord">
+          <svg  xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M8 5.072a8 8 0 1 1 -3.995 7.213l-.005 -.285l.005 -.285a8 8 0 0 1 3.995 -6.643z" />
+            </svg>
+          <span>Iniciar grabación de pantalla</span>
+        </button>
+        <button @click="stopRecord">
+          <svg  xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="currentColor">
+              <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+              <path d="M17 4h-10a3 3 0 0 0 -3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3 -3v-10a3 3 0 0 0 -3 -3z" />
+            </svg>
+          </svg>
+          <span>Detener grabación de pantalla</span>
+        </button>
+        <button @click="initGrid">
+          <svg  xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M4 4m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z" />
+            <path d="M14 4m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z" />
+            <path d="M4 14m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z" />
+            <path d="M14 14m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z" />
+          </svg>
+          <span>Iniciar cuadrícula</span>
+        </button>
+      </div>
     </div>
-    <!-- Simple 2x2 grid containers -->
+  </header>
+  <div class="imou-player" v-if="!errorGeneral && !cargando">
+    <div id="imou-player" style="width: 1200px; height: 700px; background-color: #000">
+    </div>
     <div class="player-grid">
       <div v-for="id in gridIds" :key="id" :id="id" class="player-cell"></div>
     </div>
@@ -376,6 +527,24 @@ body {
 }
 </style>
 <style scoped>
+  .container {
+    width: fit-content;
+    margin-left: auto;
+  }
+  header {
+    background-color: #333;
+    display: flex;
+    left: 0;
+    padding: .5rem;
+    position: fixed;
+    top: 0;
+    width: 100dvw;
+    z-index: 2;
+
+    & + * {
+      margin-top: 3rem;
+    }
+  }
   .error-info {
     /* Estilos para el estado de error */
     background-color: #f8d7da;
@@ -405,5 +574,59 @@ body {
     max-height: 100%;
     width: auto;
     height: auto;
+  }
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  button,
+  .btn {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    width: 100%;
+    background-color: transparent;
+    border: none;
+    color: inherit;
+    margin: 0;
+    padding: .25rem .5rem;
+    text-align: left;
+
+    &:hover {
+      color: orange;
+      cursor: pointer;
+      background-color: rgba(255, 165, 0, 0.15);
+    }
+  }
+
+  .dropdown:not(:hover) {
+    display: none;
+  }
+
+  .container:hover .dropdown,
+  .btn:hover + .dropdown {
+    display: flex;
+  }
+
+  .dropdown {
+    background-color: #333;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    gap: .25rem;
+    padding: .5rem 0;
+    border-radius: .25rem;
+    width: 250px;
+    position: absolute;
+    top: calc(100% - .5rem);
+    right: 0;
+  }
+
+  div.btn {
+    border-radius: 50%;
+    margin-left: auto;
+    width: fit-content;
   }
 </style>
