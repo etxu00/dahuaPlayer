@@ -595,6 +595,8 @@ body {
     height: auto;
   }
 
+  .imou-player * {z-index: 0;}
+
   svg {
     width: 18px;
     height: 18px;
