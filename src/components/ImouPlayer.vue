@@ -546,6 +546,10 @@ body {
 .kind-stream-canvas.video-player-canvas {
   left: 0;
 }
+.icon {
+  color: white;
+  filter: drop-shadow(0px 0px 2px black) drop-shadow(0px 0px 1px rgba(0,0,0,0.5));
+}
 </style>
 <style scoped>
   .container {
