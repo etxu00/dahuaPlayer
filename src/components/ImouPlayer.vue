@@ -88,9 +88,11 @@ const descripcionError = ref(""); // Variable para almacenar el mensaje de error
 let _canal = "1";
 let _contrasena = "";
 let _numSerie = "";
+let _info = "";
 let _tokensDRV:any = null;
 let _tokenCanal:any = null;
 let _tokenBearer:any = null;
+let _modoCanal0 = true;
 
 let player: IPlayer;
 let gridIds = ["cell-0", "cell-1"];
@@ -172,7 +174,7 @@ function iniciarStream() {
   }
 
   const deviceId = _numSerie // Use noSerie as deviceId
-  const channelId = Number(_canal) - 1 // Se requiere restar 1. Índice basado en cero (Canal 1 = 0, Canal 2 = 1, etc.)
+  const channelId = _modoCanal0 ? (Number(_canal) - 1) : Number(_canal) // Canal basado en cero
   const token = _tokenCanal.token
   const code = _contrasena
   player = new imouPlayer({
@@ -230,6 +232,7 @@ async function obtenerParametrosURL() {
   _canal = params.channel || ""
   _contrasena = params.token || ""
   _numSerie = params.noSerie || ""
+  _info = params.info || ""
 }
 
 async function obtenerTokenBearer(): Promise<void> {
@@ -312,7 +315,35 @@ async function validarTokenDRV() {
     await generarTokenDRV()
   } else {
     _tokensDRV = tokenDVR;
-    _tokenCanal = _tokensDRV.tokens.find((t: any) => t.channel.toString() === (Number(_canal) - 1).toString())
+    await buscarTokenCanal(tokenDVR)
+  }
+}
+
+async function buscarTokenCanal(tokenDVR: any) {
+  _tokenCanal = tokenDVR.tokens.find((tokenTMP: any) => {
+    const channelTMP = tokenTMP.channel.toString() // Canal almacenado (basado en cero)
+    const canalNum = (Number(_canal) - 1).toString() // Canal solicitado (basado en cero)
+    return channelTMP === canalNum
+  })
+  if (!_tokenCanal) {
+    _modoCanal0 = false
+    _tokenCanal = tokenDVR.tokens.find((tokenTMP: any) => {
+      const channelTMP = tokenTMP.channel.toString() // Canal almacenado (basado en cero)
+      const canalNum = (Number(_canal) - 1).toString() // Canal solicitado (basado en cero)
+      return channelTMP === (Number(canalNum) + 1).toString()
+    })
+    if (_tokenCanal) {
+      _modoCanal0 = false
+    }
+  }
+  await validarTokenCanal()
+}
+
+async function validarTokenCanal() {
+  if (!_tokenCanal || !_tokenCanal.token) {
+    errorGeneral.value = true
+    descripcionError.value = "El canal especificado no existe en el dispositivo."
+    throw new Error("El canal especificado no existe en el dispositivo.")
   }
 }
 
@@ -337,6 +368,13 @@ async function validarVigenciaTokenDRV() {
   }
 }
 
+function visualizarInfo(info: string) {
+  let title = desencriptar(info)
+  //reemplza los | por espacios
+  title = title.replace(/\|/g, ' ')
+  return title
+}
+
 /**
  * onMounted se ejecuta cuando el componente se monta en el DOM.4u!'5eIs0n\P
  */
@@ -349,6 +387,7 @@ onMounted(() => {
   <div v-if="cargando">Cargando...</div>
   <div class="error-info" v-if="errorGeneral"><p>{{ descripcionError }}</p></div>
   <header>
+    <h1 v-if="_info">{{ visualizarInfo(_info) }}</h1>
     <div class="container">
       <div class="btn">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
@@ -533,24 +572,7 @@ onMounted(() => {
     </div>
   </div>
 </template>
-<style>
-*, *:before, *:after {
-  box-sizing: border-box;
-}
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background-color: black;
-  color: white;
-}
-.kind-stream-canvas.video-player-canvas {
-  left: 0;
-}
-.icon {
-  color: white;
-  filter: drop-shadow(0px 0px 2px black) drop-shadow(0px 0px 1px rgba(0,0,0,0.5));
-}
-</style>
+
 <style scoped>
   .container {
     width: fit-content;
@@ -559,6 +581,7 @@ body {
   header {
     background-color: #333;
     display: flex;
+    align-items: center;
     left: 0;
     padding: .5rem;
     position: fixed;
