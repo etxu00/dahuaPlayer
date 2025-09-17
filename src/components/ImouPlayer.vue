@@ -4,6 +4,24 @@ import CryptoJS from 'crypto-js';
 
 declare const imouPlayer: any;
 
+const cargando = ref(true); // Variable reactiva para manejar el estado de error
+const errorGeneral = ref(false); // Variable reactiva para manejar el estado de error
+const descripcionError = ref(""); // Variable para almacenar el mensaje de error
+const gridIds = ref<string[]>(["cell-0"]);
+
+let _canal = "1";
+let _contrasena = "";
+let _numSerie = "";
+let _info = "";
+let _tokensDRV:any = null;
+let _tokenCanal:any = null;
+let _tokenBearer:any = null;
+let _modoCanal0 = true;
+
+let player: IPlayer;
+// let gridIds = ["cell-0", "cell-1", "cell-2"];
+let gridPlayers: any[] = [];
+
 interface IPlayer {
   play: Function;
   stop: Function;
@@ -51,12 +69,10 @@ const initGrid = () => {
     return;
   }
 
-  gridChannels.forEach((channel: any, index: number) => {
-    gridIds[index] = `cell-${index}`;
-  });
+  gridIds.value = gridChannels.map((_, index) => `cell-${index}`);
 
   // Add delay between player initializations to avoid conflicts
-  gridIds.forEach((id, index) => {
+  gridIds.value.forEach((id, index) => {
     setTimeout(() => {
       const el = document.getElementById(id) as HTMLElement;
       if (!el) return;
@@ -81,22 +97,6 @@ const initGrid = () => {
     }, index * 500); // 500ms delay between each player
   });
 };
-const cargando = ref(true); // Variable reactiva para manejar el estado de error
-const errorGeneral = ref(false); // Variable reactiva para manejar el estado de error
-const descripcionError = ref(""); // Variable para almacenar el mensaje de error
-
-let _canal = "1";
-let _contrasena = "";
-let _numSerie = "";
-let _info = "";
-let _tokensDRV:any = null;
-let _tokenCanal:any = null;
-let _tokenBearer:any = null;
-let _modoCanal0 = true;
-
-let player: IPlayer;
-let gridIds = ["cell-0", "cell-1"];
-let gridPlayers: any[] = [];
 
 function desencriptar(contrasena: string): string {
   const secretKey = import.meta.env.VITE_ENCRYPTION_KEY || '';

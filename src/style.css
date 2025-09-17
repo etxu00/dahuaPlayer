@@ -10,11 +10,9 @@ body {
   text-align: center;
 }
 
-
 button{
   margin: 20px 10px;
 }
-
 
 #imou-player {
   display: flex;
