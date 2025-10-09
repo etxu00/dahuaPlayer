@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { ref, onMounted } from "vue";
-import CryptoJS from 'crypto-js';
+import CryptoJS, { enc } from 'crypto-js';
 
 declare const imouPlayer: any;
 
@@ -64,6 +64,7 @@ const initGrid = () => {
   
   const tokenTMP = tokens.find((token: any) => token.no_serie === _numSerie);
   const gridChannels = tokenTMP.tokens;
+  debugger
 
   if (!gridChannels.length) {
     return;
@@ -119,6 +120,26 @@ function desencriptar(contrasena: string): string {
   }
 }
 
+function encriptar(contrasena: string): string {
+  const secretKey = import.meta.env.VITE_ENCRYPTION_KEY || '';
+  try {
+    if (!contrasena || !secretKey) {
+      throw new Error("La contraseña o la clave de cifrado no están definidas.");
+    }
+
+    const ciphertext = CryptoJS.AES.encrypt(contrasena, secretKey).toString();
+
+    if (!ciphertext) {
+      throw new Error("La contraseña cifrada está vacía.");
+    }
+
+    return ciphertext;
+  } catch (error) {
+    console.error("Error al cifrar la contraseña:", error);
+    throw error; // Lanza el error para manejarlo en otro lugar si es necesario
+  }
+}
+
 async function generarTokenBearer() {
   const data: any = await obtenerTokenBearer();
   const tokenBear = data?.accessToken?.token || ""
@@ -151,6 +172,7 @@ async function generarTokenDRV() {
       issue_date: new Date().toISOString(),
       no_serie: _numSerie,
       tokens: data.tokens,
+      password: encriptar(_contrasena),
     })
   }
 
@@ -385,7 +407,10 @@ onMounted(() => {
 </script>
 <template>
   <div v-if="cargando">Cargando...</div>
-  <div class="error-info" v-if="errorGeneral"><p>{{ descripcionError }}</p></div>
+  <div class="error-info" v-if="errorGeneral">
+    <p>{{ descripcionError }}</p>
+    <button @click="reset">Reintentar</button>
+  </div>
   <header>
     <h1 v-if="_info">{{ visualizarInfo(_info) }}</h1>
     <div class="container">
@@ -599,6 +624,18 @@ onMounted(() => {
     color: #721c24;
     padding: 10px;
     border: 1px solid #f5c6cb;
+
+    button {
+      background-color: rgba(255, 0, 0, 0.25);
+      display: inline;
+      cursor: pointer;
+      max-width: fit-content;
+
+      &:hover {
+        background-color: rgba(255, 0, 0, 0.5);
+        color: #721c24;
+      }
+    }
   }
   .player-grid {
     display: grid;
