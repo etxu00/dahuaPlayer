@@ -221,7 +221,7 @@ async function inicio() {
     console.error("Error en el flujo de inicio:", error)
     cargando.value = false
     errorGeneral.value = true
-    descripcionError.value = "Ocurrió un error durante la inicialización."
+    descripcionError.value = descripcionError.value || "Ocurrió un error durante la inicialización."
   }
 }
 
@@ -340,7 +340,9 @@ async function buscarTokenCanal(tokenDVR: any) {
 }
 
 async function validarTokenCanal() {
+  debugger
   if (!_tokenCanal || !_tokenCanal.token) {
+    debugger
     errorGeneral.value = true
     descripcionError.value = "El canal especificado no existe en el dispositivo."
     throw new Error("El canal especificado no existe en el dispositivo.")
@@ -595,10 +597,10 @@ onMounted(() => {
   }
   .error-info {
     /* Estilos para el estado de error */
-    background-color: #f8d7da;
-    color: #721c24;
+    background-color: #9abcff;
+    color: darkblue;
     padding: 10px;
-    border: 1px solid #f5c6cb;
+    border: 1px solid transparent;
   }
   .player-grid {
     display: grid;
