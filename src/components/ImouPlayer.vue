@@ -301,6 +301,7 @@ async function validarParametrosURL() {
 
 async function validarTokenBearer() {
   const tokenBearer = localStorage.getItem('token_bear')
+
   if (tokenBearer) {
     _tokenBearer = tokenBearer
   } else {
